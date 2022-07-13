@@ -1,6 +1,5 @@
 package com.projetos.cursos.security;
  
-import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,15 +22,16 @@ public class TokenSecurity {
 		List<GrantedAuthority> grantedAuthorityList = 
 				AuthorityUtils.commaSeparatedStringToAuthorityList("ROLE_USER");
 		
-		//GERSON_JWT -> nome da aplicação de gerou pro token!!!!
+	/*GERSON_JWT -> nome da aplicação de gerou pro token!!!!
+				.setIssuedAt(new Date(System.currentTimeMillis()))
+				.setExpiration(new Date(System.currentTimeMillis()+ 6000000))
+	*/
 		String token = Jwts.builder()
 				.setId("GERSON_JWT")
 				.setSubject(login)
 				.claim("authorities", grantedAuthorityList.stream()
 						.map(GrantedAuthority::getAuthority)
 						.collect(Collectors.toList()))
-				.setIssuedAt(new Date(System.currentTimeMillis()))
-				.setExpiration(new Date(System.currentTimeMillis()+ 10000))
 				.signWith(SignatureAlgorithm.HS512,secretKey.getBytes()).compact();
 		
 		return token;

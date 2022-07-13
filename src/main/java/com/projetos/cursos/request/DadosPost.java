@@ -9,7 +9,8 @@ import lombok.Data;
 @Data
 public class DadosPost {
     
-    private String alunos, descricao;
+    private Long alunos; 
+    private String descricao;
     private LocalDate inicio, termino;
     private Categoria cat;
 }

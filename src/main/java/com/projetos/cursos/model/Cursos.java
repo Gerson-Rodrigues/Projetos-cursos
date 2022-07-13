@@ -32,7 +32,7 @@ public class Cursos {
     private String descricao; 
 
     @Column( nullable = false )
-    private String alunos;
+    private Long alunos;
     
     @Column( nullable = false )
     private LocalDate inicio;

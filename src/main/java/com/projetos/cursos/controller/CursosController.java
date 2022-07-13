@@ -14,29 +14,34 @@ import com.projetos.cursos.request.DadosPost;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.ApiOperation;
 
-@Controller
+@RestController
 @Transactional
+@CrossOrigin
 public class CursosController {
     
     @Autowired
 	private CursoCrudRepo crudRepo;
 
-    private static final String ENDPOINT = "/api/cursos1";
-
     @ApiOperation("Serviço de Cadastro. ")
-	@RequestMapping(value = ENDPOINT, method = RequestMethod.POST)
-	@CrossOrigin
+	@PostMapping("/api/cursos")
 	public ResponseEntity<String>post(@RequestBody DadosPost request){
 		try {
+            /*if(crudRepo.findByInicioCursos(request.getInicio()!=null)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.body("Data já está cadastrado");
+            }*/
+
             Cursos cursos = new Cursos();
 
             cursos.setDescricao(request.getDescricao());
@@ -55,8 +60,7 @@ public class CursosController {
 	}
 
     @ApiOperation("Serviço que Busca geral")
-	@RequestMapping(value = ENDPOINT, method = RequestMethod.GET)
-	@CrossOrigin
+	@GetMapping("/api/cursos")
 	public ResponseEntity<List<Dados>> get(){
 		List<Dados> response = new ArrayList<Dados>();
 		
@@ -76,8 +80,7 @@ public class CursosController {
 	}
 
     @ApiOperation("Serviço de Busca por ID")
-    @CrossOrigin
-    @RequestMapping(value = ENDPOINT+"/{id}", method = RequestMethod.GET)
+    @GetMapping("/api/cursos/{id}")
     public ResponseEntity<Dados> getById(@PathVariable("id") Long id) {
         Optional<Cursos> optional = crudRepo.findById(id);
 
@@ -100,8 +103,7 @@ public class CursosController {
     }
 
     @ApiOperation("Serviço de Exclusão de Curso")
-    @CrossOrigin
-    @RequestMapping(value = ENDPOINT+"/{id}", method = RequestMethod.DELETE)
+    @DeleteMapping("/api/cursos/{id}")
     public ResponseEntity<String>delete(@PathVariable("id")Long id) {
         try {
             Optional<Cursos> optional= crudRepo.findById(id);
@@ -121,8 +123,7 @@ public class CursosController {
     }
     
     @ApiOperation("Serviço de Atualização dos dados do Curso")
-    @CrossOrigin
-    @RequestMapping(value = ENDPOINT, method = RequestMethod.PUT)
+    @PutMapping("/api/cursos")
     public ResponseEntity<String>put(@RequestBody Dados dados) {
         try {
             Optional<Cursos> optional = crudRepo.findById(dados.getId());
