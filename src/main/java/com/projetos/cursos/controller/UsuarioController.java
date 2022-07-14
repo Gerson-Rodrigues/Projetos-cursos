@@ -11,9 +11,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.projetos.cursos.model.Usuario;
 import com.projetos.cursos.repository.IUsuarioRepo;
@@ -21,19 +24,18 @@ import com.projetos.cursos.request.RUsuario;
 import io.swagger.annotations.ApiOperation;
 
 
-@Controller
-@Transactional
+@RestController
+@RequestMapping(value="/api/usuario")
 public class UsuarioController {
 
 	@Autowired
 	private IUsuarioRepo usuarioRepository;
 	
-	private static final String ENDPOINT = "/api/usuario";
 	
 	@ApiOperation("Serviço para exclusão de um Usuário")
-	@RequestMapping(value = ENDPOINT + "/{idusuario}", method = RequestMethod.DELETE)
 	@CrossOrigin
-	public ResponseEntity<String>delete(@PathVariable("idusuario")Integer idusuario){
+	@DeleteMapping("{id}")
+	public ResponseEntity<String>delete(@PathVariable("id")Integer idusuario){
 		try {
 			Optional<Usuario> item = usuarioRepository.findById(idusuario);
 			if(item.isEmpty()){
@@ -52,7 +54,7 @@ public class UsuarioController {
 	}
 	
 	@ApiOperation("Serviço para consulta de Usuários")
-	@RequestMapping(value = ENDPOINT, method = RequestMethod.GET)
+	@GetMapping
 	@CrossOrigin
 	public ResponseEntity<List<RUsuario>>get(){
 		List<RUsuario> response = new ArrayList<RUsuario>();

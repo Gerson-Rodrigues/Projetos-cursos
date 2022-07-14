@@ -15,6 +15,7 @@ import com.projetos.cursos.model.EmailModel;
 import com.projetos.cursos.service.EmailService;
 
 @RestController
+
 public class EmailController {
 
 	@Autowired

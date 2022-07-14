@@ -12,10 +12,10 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import javax.transaction.Transactional;
 
 import com.projetos.cursos.model.Cursos;
 import com.projetos.cursos.repository.CursoCrudRepo;
+import com.projetos.cursos.request.Dados;
 import com.projetos.cursos.service.EmailService;
 
 import org.slf4j.Logger;
@@ -31,171 +31,153 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.ApiOperation;
 
 @RestController
-@Transactional
+@RequestMapping(value = "/api/cursos")
 @CrossOrigin(origins = "", allowedHeaders = "")
 public class CursosController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CursosController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CursosController.class);
 
-    @Autowired
-    private CursoCrudRepo crudRepo;
+	@Autowired
+	private CursoCrudRepo crudRepo;
 
-    EmailService service;
+	EmailService service;
 
-    @PersistenceContext
-    EntityManager em;
+	@PersistenceContext
+	EntityManager em;
 
-    @ApiOperation("Serviço de Cadastro. ")
-    @PostMapping("/api/cursos")
-    public ResponseEntity<String> post(@RequestBody Cursos cursos) {
-        try {
-            validaData(cursos);
+	@ApiOperation("Serviço de Cadastro. ")
+	@PostMapping
+	public ResponseEntity<String> post(@RequestBody Cursos cursos) {
+		try {
+			validaData(cursos);
+			crudRepo.save(cursos);
 
-            if (cursos.getInicio().isBefore(LocalDate.now())) {
-                LOGGER.info("Serviço para cadastro não realizado!");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("ERRO: Data de início menor que a data atual.");
-            } else {
-                /*Dados  dados = new Dados();
+			LOGGER.info("Serviço para cadastro realizado com sucesso.");
+			return ResponseEntity.status(HttpStatus.OK).body("Curso cadastrado");
 
-                cursos.setDescricao(dados.getDescricao());
-                cursos.setAlunos(dados.getAlunos());
-                cursos.setInicio(dados.getInicio());
-                cursos.setTermino(dados.getTermino());
-                cursos.setCat(dados.getCat());*/
+		} catch (Exception e) {
+			LOGGER.error("Erro ao cadastrar.");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro :" + e.getMessage());
+		}
+	}
 
-                crudRepo.save(cursos);
-                LOGGER.info("Serviço para cadastro realizado com sucesso.");
-                return ResponseEntity.status(HttpStatus.OK).body("Curso cadastrado");
-            }
+	private void validaData(Cursos cursos) {
+		if (cursos.getInicio().isAfter(cursos.getTermino())) {
+			LOGGER.info("Periodo por data requisitado com sucesso!");
+			throw new RuntimeException("não permitido");
+		}
+		if (cursos.getInicio().isBefore(LocalDate.now())) {
+			LOGGER.info("Periodo por data requisitado com sucesso!");
+			throw new RuntimeException("não permitido, se a data inicio for menor que hoje");
+		}
 
-        } catch (Exception e) {
-            LOGGER.error("Erro ao cadastrar.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro :" + e.getMessage());
-        }
-    }
+		List<Cursos> cursosBuscados = crudRepo.findByInicioGreaterThanEqualAndTerminoLessThanEqual(cursos.getInicio(),
+				cursos.getTermino());
+		if (cursosBuscados.size() > 0) {
+			LOGGER.info("Existe(m) curso(s) planejados(s) dentro do período informado.");
+			// Método de validação de data não permitido
+			throw new RuntimeException("Já existem cursos cadastrados no período informado.");
+		}
+	}
+	/*
+	 * @CrossOrigin
+	 * 
+	 * @GetMapping public ResponseEntity<List<Cursos>>
+	 * filtrar(@RequestParam(required = false) String descricao,
+	 * 
+	 * @RequestParam(required = false) @DateTimeFormat(iso =
+	 * DateTimeFormat.ISO.DATE) LocalDate inicio,
+	 * 
+	 * @RequestParam(required = false) @DateTimeFormat(iso =
+	 * DateTimeFormat.ISO.DATE) LocalDate termino) { List<Cursos> cursos =
+	 * service.consultar(descricao, inicio, termino);
+	 * 
+	 * return ResponseEntity.ok().body(cursos); }
+	 */
 
-    private void validaData(Cursos cursos) {
-        if (cursos.getInicio().isAfter(cursos.getTermino())) {
-            LOGGER.info("Periodo por data requisitado com sucesso!");
-            throw new RuntimeException("não permitido");
-        }
+	@ApiOperation("Serviço que Busca geral")
+	@GetMapping
+	public ResponseEntity<List<Cursos>> get(@RequestParam(required = false) String descricao,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate termino) {
 
-        List<Cursos> cursosBuscados = crudRepo.findByInicioGreaterThanEqualAndTerminoLessThanEqual(cursos.getInicio(), cursos.getTermino());
-        if (cursosBuscados.size() > 0) {
-            LOGGER.info("Existe(m) curso(s) planejados(s) dentro do período informado.");
-            // Método de validação de data não permitido
-            throw new RuntimeException("Já existem cursos cadastrados no período informado.");
-        }
-    }
+		CriteriaBuilder cb = em.getCriteriaBuilder();
+		CriteriaQuery<Cursos> cq = cb.createQuery(Cursos.class);
 
-    @ApiOperation("Serviço que Busca geral")
-    @GetMapping("/api/cursos")
-    public ResponseEntity<List<Cursos>> get(
-            @RequestParam(required = false) String descricao,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate termino) {
+		Root<Cursos> cursos = cq.from(Cursos.class);
 
-                CriteriaBuilder cb = em.getCriteriaBuilder();
-                CriteriaQuery<Cursos> cq = cb.createQuery(Cursos.class);
-        
-                Root<Cursos> cursos = cq.from(Cursos.class);
-        
-                List<Predicate> predicates = new ArrayList<>();
-        
-                if (descricao != null&& descricao!="") {
-        
-                    Predicate descricaoAssuntoPredicate = cb.equal(cursos.get("descricao"), descricao);
-                    predicates.add(descricaoAssuntoPredicate);
-                }
+		List<Predicate> predicates = new ArrayList<>();
 
-                if (inicio != null) {
-                    Predicate inicioPredicate = cb.greaterThanOrEqualTo(cursos.get("descricao"), descricao);
-                    predicates.add(inicioPredicate);
-                }
+		if (descricao != null && descricao != "") {
 
-                if(termino != null) {
-                    Predicate terminoPredicate = cb.lessThanOrEqualTo(cursos.get("termino"), termino);
-                    predicates.add(terminoPredicate);
-                }
-        
-                Predicate[] predicateArray = new Predicate[predicates.size()];
-                predicates.toArray(predicateArray);
-                cq.where(predicateArray);
-        
-                TypedQuery<Cursos> query = em.createQuery(cq);
-        
-                LOGGER.info("Serviço para consulta realizada com sucesso!");
-                return ResponseEntity.status(HttpStatus.OK).body(query.getResultList());
-    }
+			Predicate descricaoAssuntoPredicate = cb.equal(cursos.get("descricao"), descricao);
+			predicates.add(descricaoAssuntoPredicate);
+		}
 
-    /*@ApiOperation("Serviço de Busca por ID")
-    @GetMapping("/api/cursos/{id}")
-    public ResponseEntity<Cursos> getById(@PathVariable("id") Long id) {
-        Optional<Cursos> optional = crudRepo.findById(id);
+		if (inicio != null) {
+			Predicate inicioPredicate = cb.greaterThanOrEqualTo(cursos.get("inicio"), inicio);
+			predicates.add(inicioPredicate);
+		}
 
-        if (optional.isEmpty()) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND).body(null);
-        } else {
-            Dados dados = new Dados();
-            Cursos cursos = optional.get();
+		if (termino != null) {
+			Predicate terminoPredicate = cb.lessThanOrEqualTo(cursos.get("termino"), termino);
+			predicates.add(terminoPredicate);
+		}
 
-            dados.setId(cursos.getId());
-            dados.setDescricao(cursos.getDescricao());
-            dados.setAlunos(cursos.getAlunos());
-            dados.setInicio(cursos.getInicio());
-            dados.setTermino(cursos.getTermino());
-            dados.setCat(cursos.getCat());
+		Predicate[] predicateArray = new Predicate[predicates.size()];
+		predicates.toArray(predicateArray);
+		cq.where(predicateArray);
 
-            return ResponseEntity.status(HttpStatus.OK).body(cursos);
-        }
-    }*/
+		TypedQuery<Cursos> query = em.createQuery(cq);
 
-    @CrossOrigin
-    @GetMapping
-    public ResponseEntity<List<Cursos>> buscar(
-            @RequestParam(required = false)String descricao,
-            @RequestParam(required = false)@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate inicio, 
-            @RequestParam(required = false)@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate termino) {
-        List<Cursos> cursos = service.consultar(descricao, inicio, termino);
+		LOGGER.info("Serviço para consulta realizada com sucesso!");
+		return ResponseEntity.status(HttpStatus.OK).body(query.getResultList());
+	}
 
-        return ResponseEntity.ok().body(cursos);
-    }
+	@ApiOperation("Serviço de Busca por ID")
 
-    @ApiOperation("Serviço de Exclusão de Curso")
-    @DeleteMapping("/api/cursos/{id}")
-    public ResponseEntity<String> delete(@PathVariable("id") Long id) {
-        try {
-            Optional<Cursos> optional = crudRepo.findById(id);
-            if (optional.isEmpty()) {
-                LOGGER.info("Serviço para deletar não realizado!");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("ID não encontrado!");
-            } else {
-                Cursos cursos = optional.get();
-                crudRepo.delete(cursos);
-                LOGGER.info("Serviço para deletar efetuado!");
-                return ResponseEntity.status(HttpStatus.OK)
-                        .body("Dados excluidos com sucesso!");
-            }
-        } catch (Exception e) {
-            LOGGER.error("Erro ao deletar.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Ocorreu algum erro" + e.getMessage());
-        }
-    }
+	@GetMapping("{id}")
+	public ResponseEntity<Cursos> getById(@PathVariable("id") Long id) {
+		Optional<Cursos> optional = crudRepo.findById(id);
 
-    @ApiOperation("Serviço de Atualização dos dados do Curso")
-    @PutMapping("/api/cursos")
-    public ResponseEntity<String> put(@RequestBody Cursos cursos ) {
-        try {
+		if (optional.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		} else {
+			return ResponseEntity.status(HttpStatus.OK).body(optional.get());
+		}
+	}
+
+	@ApiOperation("Serviço de Exclusão de Curso")
+	@DeleteMapping("{id}")
+	public ResponseEntity<String> delete(@PathVariable("id") Long id) {
+		try {
+			Optional<Cursos> optional = crudRepo.findById(id);
+			if (optional.isEmpty()) {
+				LOGGER.info("Serviço para deletar não realizado!");
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ID não encontrado!");
+			} else {
+				Cursos cursos = optional.get();
+				crudRepo.delete(cursos);
+				LOGGER.info("Serviço para deletar efetuado!");
+				return ResponseEntity.status(HttpStatus.OK).body("Dados excluidos com sucesso!");
+			}
+		} catch (Exception e) {
+			LOGGER.error("Erro ao deletar.");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu algum erro" + e.getMessage());
+		}
+	}
+
+	@ApiOperation("Serviço de Atualização dos dados do Curso")
+	@PutMapping
+	public ResponseEntity<String> put(@RequestBody Cursos cursos) {
+		try {
 
 			if (cursos.getInicio().isBefore(LocalDate.now())) {
 
@@ -214,6 +196,6 @@ public class CursosController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro: " + e.getMessage());
 		}
 
-    }
+	}
 
 }

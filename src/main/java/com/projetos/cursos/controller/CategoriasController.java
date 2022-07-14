@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.projetos.cursos.model.Categoria;
@@ -20,7 +21,7 @@ import com.projetos.cursos.service.EmailService;
 import io.swagger.annotations.ApiOperation;
 
 @RestController
-@Transactional
+@RequestMapping(value="/api/categorias")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class CategoriasController {
 
@@ -30,7 +31,7 @@ public class CategoriasController {
     EmailService service;
 
     @ApiOperation("Serviço de Busca de Categorias")
-    @GetMapping("/api/categorias")
+    @GetMapping
 	public ResponseEntity<List<CatDados>> get(){
 		List<CatDados> response = new ArrayList<CatDados>();
 		List<Categoria> listaCursos = (List<Categoria>) service.todosCursos();

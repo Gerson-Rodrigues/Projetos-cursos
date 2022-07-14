@@ -24,6 +24,7 @@ public class JwtConf extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers(HttpMethod.POST, "/api/account").permitAll()
                 .antMatchers(HttpMethod.POST, "/api/login").permitAll()
+                .antMatchers( "/api/cursos").permitAll()
                 .antMatchers(HttpMethod.POST, "/envia-email").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/categorias").permitAll()
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
