@@ -14,10 +14,9 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.transaction.Transactional;
 
-import com.projetos.cursos.CursosApplication;
 import com.projetos.cursos.model.Cursos;
 import com.projetos.cursos.repository.CursoCrudRepo;
-import com.projetos.cursos.request.Dados;
+import com.projetos.cursos.service.EmailService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +38,15 @@ import io.swagger.annotations.ApiOperation;
 
 @RestController
 @Transactional
-@CrossOrigin
+@CrossOrigin(origins = "", allowedHeaders = "")
 public class CursosController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CursosApplication.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CursosController.class);
 
     @Autowired
     private CursoCrudRepo crudRepo;
 
+    EmailService service;
 
     @PersistenceContext
     EntityManager em;
@@ -62,6 +62,14 @@ public class CursosController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("ERRO: Data de início menor que a data atual.");
             } else {
+                /*Dados  dados = new Dados();
+
+                cursos.setDescricao(dados.getDescricao());
+                cursos.setAlunos(dados.getAlunos());
+                cursos.setInicio(dados.getInicio());
+                cursos.setTermino(dados.getTermino());
+                cursos.setCat(dados.getCat());*/
+
                 crudRepo.save(cursos);
                 LOGGER.info("Serviço para cadastro realizado com sucesso.");
                 return ResponseEntity.status(HttpStatus.OK).body("Curso cadastrado");
@@ -79,7 +87,7 @@ public class CursosController {
             throw new RuntimeException("não permitido");
         }
 
-        List<Cursos> cursosBuscados = crudRepo.getAllBetweenDates(cursos.getInicio(), cursos.getTermino());
+        List<Cursos> cursosBuscados = crudRepo.findByInicioGreaterThanEqualAndTerminoLessThanEqual(cursos.getInicio(), cursos.getTermino());
         if (cursosBuscados.size() > 0) {
             LOGGER.info("Existe(m) curso(s) planejados(s) dentro do período informado.");
             // Método de validação de data não permitido
@@ -101,10 +109,20 @@ public class CursosController {
         
                 List<Predicate> predicates = new ArrayList<>();
         
-                if (descricao != null) {
+                if (descricao != null&& descricao!="") {
         
-                    Predicate descricaoAssuntoPredicate = cb.equal(cursos.get("descricaoAssunto"), descricao);
+                    Predicate descricaoAssuntoPredicate = cb.equal(cursos.get("descricao"), descricao);
                     predicates.add(descricaoAssuntoPredicate);
+                }
+
+                if (inicio != null) {
+                    Predicate inicioPredicate = cb.greaterThanOrEqualTo(cursos.get("descricao"), descricao);
+                    predicates.add(inicioPredicate);
+                }
+
+                if(termino != null) {
+                    Predicate terminoPredicate = cb.lessThanOrEqualTo(cursos.get("termino"), termino);
+                    predicates.add(terminoPredicate);
                 }
         
                 Predicate[] predicateArray = new Predicate[predicates.size()];
@@ -117,7 +135,7 @@ public class CursosController {
                 return ResponseEntity.status(HttpStatus.OK).body(query.getResultList());
     }
 
-    @ApiOperation("Serviço de Busca por ID")
+    /*@ApiOperation("Serviço de Busca por ID")
     @GetMapping("/api/cursos/{id}")
     public ResponseEntity<Cursos> getById(@PathVariable("id") Long id) {
         Optional<Cursos> optional = crudRepo.findById(id);
@@ -138,6 +156,17 @@ public class CursosController {
 
             return ResponseEntity.status(HttpStatus.OK).body(cursos);
         }
+    }*/
+
+    @CrossOrigin
+    @GetMapping
+    public ResponseEntity<List<Cursos>> buscar(
+            @RequestParam(required = false)String descricao,
+            @RequestParam(required = false)@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate inicio, 
+            @RequestParam(required = false)@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate termino) {
+        List<Cursos> cursos = service.consultar(descricao, inicio, termino);
+
+        return ResponseEntity.ok().body(cursos);
     }
 
     @ApiOperation("Serviço de Exclusão de Curso")
