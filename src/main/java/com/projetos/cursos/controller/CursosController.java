@@ -15,7 +15,6 @@ import javax.persistence.criteria.Root;
 
 import com.projetos.cursos.model.Cursos;
 import com.projetos.cursos.repository.CursoCrudRepo;
-import com.projetos.cursos.request.Dados;
 import com.projetos.cursos.service.EmailService;
 
 import org.slf4j.Logger;
@@ -82,26 +81,10 @@ public class CursosController {
 				cursos.getTermino());
 		if (cursosBuscados.size() > 0) {
 			LOGGER.info("Existe(m) curso(s) planejados(s) dentro do período informado.");
-			// Método de validação de data não permitido
 			throw new RuntimeException("Já existem cursos cadastrados no período informado.");
 		}
 	}
-	/*
-	 * @CrossOrigin
-	 * 
-	 * @GetMapping public ResponseEntity<List<Cursos>>
-	 * filtrar(@RequestParam(required = false) String descricao,
-	 * 
-	 * @RequestParam(required = false) @DateTimeFormat(iso =
-	 * DateTimeFormat.ISO.DATE) LocalDate inicio,
-	 * 
-	 * @RequestParam(required = false) @DateTimeFormat(iso =
-	 * DateTimeFormat.ISO.DATE) LocalDate termino) { List<Cursos> cursos =
-	 * service.consultar(descricao, inicio, termino);
-	 * 
-	 * return ResponseEntity.ok().body(cursos); }
-	 */
-
+	
 	@ApiOperation("Serviço que Busca geral")
 	@GetMapping
 	public ResponseEntity<List<Cursos>> get(@RequestParam(required = false) String descricao,
